@@ -2,6 +2,12 @@
 name = "inkml"
 version = "0.0.1"
 authors = ["1011X <1011XXXXX@gmail.com>"]
+description = "Rust library to read and write InkML files (WIP)"
+repository = "https://github.com/1011X/inkml"
+readme = "README.md"
+categories = ["data-structures", "parser-implementations"]
+keywords = ["ink", "digital ink", "xml"]
+license = "MIT"
 
 [dependencies]
 xml-rs = "0.8"
