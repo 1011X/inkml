@@ -1,6 +1,6 @@
 [package]
 name = "inkml"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["1011X <1011XXXXX@gmail.com>"]
 
 [dependencies]
