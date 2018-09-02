@@ -6,7 +6,7 @@ description = "Rust library to read and write InkML files (WIP)"
 repository = "https://github.com/1011X/inkml"
 readme = "README.md"
 categories = ["data-structures", "parser-implementations"]
-keywords = ["ink", "digital ink", "xml"]
+keywords = ["ink", "digital-ink", "xml"]
 license = "MIT"
 
 [dependencies]
