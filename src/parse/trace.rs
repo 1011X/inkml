@@ -87,8 +87,9 @@ impl Trace {
     /// 
     /// In Backus-Naur form, it looks like this:
     /// 
-    ///     trace ::= point ("," point)* ","? wsp*
-    /// 
+    /// ```bnf
+    /// trace ::= point ("," point)* ","? wsp*
+    /// ```
     pub fn parse(input: &str) -> ParseResult<(&str, Self)> {
         // To help with understanding, the Backus-Naur form has been expanded a
         // bit and augmented with possible states (in angle brackets):
