@@ -1,6 +1,9 @@
 extern crate xml;
 
 mod trace;
+//mod channel;
+//mod context;
+//mod brush;
 
 pub use trace::Trace;
 
@@ -31,14 +34,15 @@ pub enum ParseError<'a> {
     UnexpectedValue(&'a str),
 }
 
-/**
+/*
 value   ::= difference_order?  wsp* "-"? wsp* number | "T" | "F" | "*" | "?"
 number  ::= (decimal | double | hex)
 double  ::= decimal ("e"|"E") ("+"|"-")? digit+ 
 decimal ::= digit+ ("." digit*)? | "." digit+
 difference_order ::= ("!" | "'" | '"')
-**/
+*/
 
+// TODO: include Unicode whitespace code points?
 // wsp ::= (#x20 | #x9 | #xD | #xA)
 pub fn wsp(c: char) -> bool {
     ['\x20', '\x09', '\x0D', '\x0A'].contains(&c)
@@ -82,9 +86,9 @@ fn hex(mut input: &str) -> ParseResult<(&str, &str)> {
 pub struct Point(Vec<Value>);
 
 impl Point {
-    // point ::= (wsp* value)+ wsp*
-    //       ::= wsp* value wsp* (value wsp*)*
     fn parse(mut input: &str) -> ParseResult<(&str, Self)> {
+        // point ::= (wsp* value)+ wsp*
+        //       ::= wsp* value wsp* (value wsp*)*
         let mut values = Vec::new();
         
         // wsp*
@@ -157,12 +161,61 @@ pub enum Value {
 }
 
 impl Value {
-    // value ::= difference_order?  wsp* "-"? wsp* number | "T" | "F" | "*" | "?"
     fn parse(input: &str) -> ParseResult<(&str, Self)> {
+        // value ::= difference_order?  wsp* "-"? wsp* number | "T" | "F" | "*" | "?"
+        
         if input.is_empty() {
-            return Err(ParseError::EndOfFile)
+            return Err(ParseError::EndOfFile);
         }
         
+        // {! ' " wsp - number T F * ?}
+        /*
+        if input.starts_with('*') {
+            return Ok((&input[1..], Value::Inferred));
+        }
+        
+        if input.starts_with('?') {
+            return Ok((&input[1..], Value::NotGiven));
+        }
+        
+        if input.starts_with('T') {
+            return Ok((&input[1..], Value::Bool(true)));
+        }
+        
+        if input.starts_with('F') {
+            return Ok((&input[1..], Value::Bool(false)));
+        }
+        
+        fn number(mut i: &str) -> ParseResult<(&str, i64)> {
+            // TODO
+            // difference_order?
+            
+            // wsp*
+            i = i.trim_left_matches(wsp);
+            
+            // "-"?
+            let mut negated = false;
+            if i.starts_with('-') {
+                negated = true;
+                i = &i[1..];
+            }
+            
+            // wsp*
+            i = i.trim_left_matches(wsp);
+            
+            // number
+            let num = i.matches(char::is_ascii_digit)
+                .nth(0)
+                .ok_or(ParseError::UnexpectedValue(i))?;
+            
+            Ok((&i
+        }
+        
+        // difference_order? wsp* "-"? wsp* number
+        if let Ok((i, num)) = number(input)? {
+            return Ok((i, Value::Number(order, num)));
+        }
+        */
         let value = match &input[..1] {
             // "*"
             "*" => Value::Inferred,
@@ -172,6 +225,8 @@ impl Value {
             "T" => Value::Bool(true),
             // "F"
             "F" => Value::Bool(false),
+            // number
+            //"!" | "'" | "\"" | "-" | x if 
             // TODO
             // difference_order?  wsp* "-"? wsp* number
             _ => return Err(ParseError::UnexpectedValue(input))
@@ -239,7 +294,7 @@ mod tests {
             }
         }
         
-        assert_eq!(trace.unwrap(), Trace::new(vec![
+        assert_eq!(trace.unwrap(), Trace::with_points(vec![
             Point(vec![Value::Inferred, Value::Inferred]),
             Point(vec![Value::NotGiven]),
             Point(vec![Value::Bool(false), Value::Bool(true)]),
