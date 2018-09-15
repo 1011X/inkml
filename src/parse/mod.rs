@@ -1,6 +1,7 @@
 mod trace;
 mod point;
 mod value;
+mod number;
 
 pub use self::trace::Trace;
 pub use self::point::Point;
@@ -14,7 +15,6 @@ pub enum ParseError<'a> {
     EndOfFile,
     UnexpectedValue(&'a str),
 }
-
 
 
 // TODO: include Unicode whitespace code points?

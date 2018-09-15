@@ -158,7 +158,7 @@ impl Trace {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::Trace;
     use super::super::{Point, Value};
     

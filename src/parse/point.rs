@@ -44,7 +44,7 @@ impl Point {
 }
 
 #[cfg(test)]
-mod point {
+mod tests {
     use super::Point;
     use super::super::Value;
     

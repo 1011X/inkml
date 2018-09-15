@@ -5,7 +5,7 @@ pub enum Value {
     Inferred,
     NotGiven,
     Bool(bool),
-    //Number {
+    //Number(Number),
 }
 
 impl Value {
@@ -85,7 +85,7 @@ impl Value {
 }
 
 #[cfg(test)]
-mod value {
+mod tests {
     use super::Value;
     
     #[test]
