@@ -9,8 +9,9 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn parse(input: &str) -> ParseResult<(&str, Self)> {
+    pub fn parse(input: &str) -> ParseResult<(Self, &str)> {
         // value ::= difference_order?  wsp* "-"? wsp* number | "T" | "F" | "*" | "?"
+        let mut tokens = input.chars();
         
         if input.is_empty() {
             return Err(ParseError::EndOfFile);
@@ -64,25 +65,45 @@ impl Value {
             return Ok((i, Value::Number(order, num)));
         }
         */
-        let value = match &input[..1] {
-            // "*"
-            "*" => Value::Inferred,
-            // "?"
-            "?" => Value::NotGiven,
-            // "T"
-            "T" => Value::Bool(true),
-            // "F"
-            "F" => Value::Bool(false),
-            // number
-            //"!" | "'" | "\"" | "-" | x if 
-            // TODO
+        Ok((match tokens.next() {
+        	None => return Err(ParseError::EndOfFile),
+            Some('*') => Value::Inferred,
+            Some('?') => Value::NotGiven,
+            Some('T') => Value::Bool(true),
+            Some('F') => Value::Bool(false),
+            // TODO number
             // difference_order?  wsp* "-"? wsp* number
-            _ => return Err(ParseError::UnexpectedValue(input))
-        };
+            // number ::= decimal | double | hex
+            /*
+            Some(diff @ '!' | '\'' | '"') => {
+            	let diff = DiffOrder::from_char(diff);
+            	
+            	let tokens = tokens.skip_while(|&c| wsp(c));
+            	let negative = tokens.next();
+            }
+            */
+            _ => return Err(ParseError::UnexpectedValue)
+        }, &input[1..]))
         
-        Ok((&input[1..], value))
+        //Ok((&input[1..], value))
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum DiffOrder { Explicit, Single, Second }
+
+impl DiffOrder {
+	fn from_char(c: char) -> DiffOrder {
+		match c {
+			'!'  => DiffOrder::Explicit,
+			'\'' => DiffOrder::Single,
+			'"'  => DiffOrder::Second,
+			_ => unreachable!()
+		}
+	}
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -90,17 +111,17 @@ mod tests {
     
     #[test]
     fn inferred() {
-        assert_eq!(("", Value::Inferred), Value::parse("*").unwrap());
+        assert_eq!((Value::Inferred, ""), Value::parse("*").unwrap());
     }
     
     #[test]
     fn not_given() {
-        assert_eq!(("", Value::NotGiven), Value::parse("?").unwrap());
+        assert_eq!((Value::NotGiven, ""), Value::parse("?").unwrap());
     }
     
     #[test]
     fn boolean() {
-        assert_eq!(("", Value::Bool(true)), Value::parse("T").unwrap());
-        assert_eq!(("", Value::Bool(false)), Value::parse("F").unwrap());
+        assert_eq!((Value::Bool(true), ""), Value::parse("T").unwrap());
+        assert_eq!((Value::Bool(false), ""), Value::parse("F").unwrap());
     }
 }

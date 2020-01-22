@@ -2,19 +2,17 @@
 use super::{Point, ParseError, ParseResult, wsp};
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum TraceType { PenDown, PenUp, Indeterminate }
 
 impl Default for TraceType {
     fn default() -> Self { TraceType::PenDown }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TraceContinuation {
     Begin,
-    //Middle(xsd::AnyUri),
     Middle(String),
-    //End(xsd::AnyUri)
     End(String),
 }
 
@@ -28,7 +26,6 @@ pub struct Trace {
 	
 	/// The identifier for this trace.
 	/// Required: no, Default: none
-	//id: Option<xsd::ID>,
 	id: Option<String>,
 	
 	/// The type of this trace.
@@ -54,13 +51,11 @@ pub struct Trace {
 	
 	/// The duration of this trace, in milliseconds.
 	/// Required: no, Default: none
-	//duration: Option<xsd::Decimal>,
 	duration: Option<f64>,
 	
 	/// The relative timestamp or time-of-day for the start of this trace, in
 	/// milliseconds.
 	/// Required: no, Default: none
-	//time_offset: Option<xsd::Decimal>,
 	time_offset: Option<f64>,
 }
 
@@ -106,7 +101,7 @@ impl Trace {
         let mut points = Vec::new();
         
         // <0> point
-        let (mut input, point) = Point::parse(input)?;
+        let (point, mut input) = Point::parse(input)?;
         points.push(point);
         
         // <1> ("," point)*
@@ -124,13 +119,13 @@ impl Trace {
             // ","
             if !input.starts_with(',') {
                 // anything else is not valid
-                return Err(ParseError::UnexpectedValue(input));
+                return Err(ParseError::UnexpectedValue);
             }
             input = &input[1..];
             
             // point
             match Point::parse(input) {
-                Ok((i, point)) => {
+                Ok((point, i)) => {
                     input = i;
                     points.push(point);
                 }
@@ -148,7 +143,7 @@ impl Trace {
         }
         
         // <3> wsp*
-        input = input.trim_left_matches(wsp);
+        input = input.trim_start_matches(wsp);
         
         // TODO: invalidate extra data?
         

@@ -9,26 +9,26 @@ use super::super::Value;
 pub struct Point(pub Vec<Value>);
 
 impl Point {
-    pub fn parse(mut input: &str) -> ParseResult<(&str, Self)> {
+    pub fn parse(mut input: &str) -> ParseResult<(Self, &str)> {
         // point ::= (wsp* value)+ wsp*
         //       ::= wsp* value wsp* (value wsp*)*
         let mut values = Vec::new();
         
         // wsp*
-        input = input.trim_left_matches(wsp);
+        input = input.trim_start_matches(wsp);
         
         // value
-        let (mut input, value) = Value::parse(input)?;
+        let (value, mut input) = Value::parse(input)?;
         values.push(value);
         
         // wsp*
-        input = input.trim_left_matches(wsp);
+        input = input.trim_start_matches(wsp);
         
         // (value wsp*)*
         loop {
             // value
             match Value::parse(input) {
-                Ok((i, value)) => {
+                Ok((value, i)) => {
                     input = i;
                     values.push(value);
                 }
@@ -36,10 +36,10 @@ impl Point {
             }
             
             // wsp*
-            input = input.trim_left_matches(wsp);
+            input = input.trim_start_matches(wsp);
         }
         
-        Ok((input, Point(values)))
+        Ok((Point(values), input))
     }
 }
 
@@ -56,7 +56,7 @@ mod tests {
     
     #[test]
     fn single() {
-        let expect = ("", Point(vec![Value::Inferred]));
+        let expect = (Point(vec![Value::Inferred]), "");
         assert_eq!(expect, Point::parse("*").unwrap());
         assert_eq!(expect, Point::parse(" *").unwrap());
         assert_eq!(expect, Point::parse(" \t*\r\n").unwrap());
@@ -64,7 +64,7 @@ mod tests {
     
     #[test]
     fn many() {
-        let expect = ("", Point(vec![Value::Inferred, Value::Inferred]));
+        let expect = (Point(vec![Value::Inferred, Value::Inferred]), "");
         assert_eq!(expect, Point::parse("**").unwrap());
         assert_eq!(expect, Point::parse("* *").unwrap());
         assert_eq!(expect, Point::parse(" * *").unwrap());
