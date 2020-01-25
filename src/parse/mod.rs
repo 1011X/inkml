@@ -1,11 +1,6 @@
-mod trace;
-mod point;
-mod value;
-//mod number;
+pub mod trace;
 
 pub use self::trace::Trace;
-pub use self::point::Point;
-pub use self::value::Value;
 
 
 pub type ParseResult<T> = Result<T, ParseError>;
@@ -32,6 +27,10 @@ pub(crate) fn digit(c: char) -> bool {
 pub(crate) fn hex(mut input: &str) -> ParseResult<(&str, &str)> {
     let mut end = 0;
     let i = input;
+    
+    if input.is_empty() {
+        return Err(ParseError::EndOfFile);
+    }
     
     // "#"
     if !input.starts_with('#') {

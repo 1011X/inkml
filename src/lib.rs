@@ -29,29 +29,50 @@ mod elements {
 }
 */
 
-use parse::Trace;
-use parse::Point;
-use parse::Value;
-use parse::{wsp, digit, hex};
-use parse::{ParseResult, ParseError};
-use node::Node;
+use self::parse::Trace;
 
 use std::io::Read;
-
+use xml::reader::XmlEvent;
+use xml::name::OwnedName;
 //use xml::attribute::{Attribute, OwnedAttribute};
+use xml::reader::Result as XmlResult;
 
 struct Ink {
-	document_id: Option<String>,
-	children: Vec<Box<dyn Node>>,
+	//document_id: Option<String>,
+	traces: Vec<Trace>,
 	/*
+	children: Vec<Box<dyn Node>>,
 	definitions: Vec<Definition>,
 	contexts: Vec<Context>,
-	traces: Vec<Trace>,
 	trace_groups: Vec<TraceGroup>,
 	trace_views: Vec<TraceView>,
 	annotations: Vec<Annotation>,
 	annotations_xml: Vec<AnnotationXML>,
 	*/
+}
+
+impl Ink {
+    fn parse<R: Read>(er: &mut xml::reader::EventReader<R>) -> XmlResult<Self> {
+        use XmlEvent::*;
+        let mut traces = Vec::new();
+        
+        loop {
+            match er.next()? {
+                EndElement { name: OwnedName { local_name, .. } }
+                if local_name == "ink" => break,
+                
+                StartElement { name: OwnedName { local_name, .. }, .. }
+                if local_name == "trace" => {
+                    let trace = Trace::parse(er)?;
+                    traces.push(trace);
+                }
+                
+                _ => unimplemented!()
+            }
+        }
+        
+        Ok(Ink { traces })
+    }
 }
 
 /*
@@ -69,10 +90,44 @@ difference_order ::= ("!" | "'" | '"')
 
 pub static INKML_URI: &str = "http://www.w3.org/2003/InkML";
 
-static TEST_INKML: &str = include_str!("minimal.ink");
-
-fn open<R: Read>(source: R) -> Ink {
-	unimplemented!();
+fn open<R: Read>(source: R) -> XmlResult<Ink> {
+    let mut reader = xml::EventReader::new(source);
+    let mut ink = Ink { traces: Vec::new() };
+    let mut path = Vec::new();
+    
+    loop {
+        match reader.next()? {
+            XmlEvent::StartDocument { .. } => {}
+            XmlEvent::Whitespace(_) => {}
+            XmlEvent::EndDocument => break,
+            
+            XmlEvent::StartElement { name: OwnedName { local_name, .. }, .. } => {
+                path.push(local_name.clone());
+            }
+            
+            XmlEvent::Characters(data) => {
+                println!("got chars: {}", data);
+                if path.last().unwrap() == "trace" {
+                    match Trace::parse_content(&data) {
+                        Ok(points) =>
+                            ink.traces.push(Trace { content: points }),
+                        Err(e) => panic!("{:?}", e),
+                    }
+                }
+            }
+            
+            XmlEvent::EndElement { name: OwnedName { local_name, .. } } => {
+                assert_eq!(path.pop().unwrap(), local_name);
+            }
+            
+            evt => {
+                println!("{:?}", evt);
+                unimplemented!()
+            }
+        }
+    }
+    
+    Ok(ink)
 }
 
 
@@ -82,36 +137,14 @@ mod tests {
     use super::*;
     
     #[test]
-    fn open_simple_inkml() {
-        use xml::reader::XmlEvent;
-        use xml::name::OwnedName;
-        
-        let stream = xml::EventReader::from_str(TEST_INKML);
-        let mut current_path = Vec::new();
-        let mut trace = None;
-        
-        for event in stream {
-            match event.unwrap() {
-                XmlEvent::StartElement { name: OwnedName { local_name, .. }, .. } => {
-                    current_path.push(local_name.clone());
-                }
-                XmlEvent::EndElement { name: OwnedName { local_name, .. }, .. } => {
-                    assert!(*current_path.last().unwrap() == local_name);
-                    current_path.pop();
-                }
-                XmlEvent::Characters(data) => {
-                    if current_path.last().unwrap() == "trace" {
-                        trace = Some(Trace::parse(&data).unwrap().1);
-                    }
-                }
-                _ => {}
-            }
-        }
-        
-        assert_eq!(trace.unwrap(), Trace::with_points(vec![
-            Point(vec![Value::Inferred, Value::Inferred]),
-            Point(vec![Value::NotGiven]),
-            Point(vec![Value::Bool(false), Value::Bool(true)]),
-        ]));
+    fn read_minimal() {
+        let test: &[u8] = include_bytes!("minimal.ink");
+        open(test).unwrap();
+    }
+    
+    #[test]
+    fn read_hello() {
+        let test: &[u8] = include_bytes!("hello.ink");
+        open(test).unwrap();
     }
 }
